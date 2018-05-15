@@ -272,7 +272,7 @@ if (false) {
      * Builds and sends a standard INVITE message, with a
      * CSeq number 1.
      * @param cp the CallParticipant
-     * @param tpccName String identifying who is making the call.
+     * @param sdp String identifying who is making the call.
      * @return transaction Id of newly created transaction.
      * @throws ParseException if message cannot be parsed
      * @throws SipException if general Sip Exception occurs.
@@ -736,7 +736,7 @@ Logger.println("XXX from = " + fromName + " " + cp);
      * @param clientTransaction ClientTransaction for this call
      * @param sdpBody String sdp body for this call
      * @param isa InetSocketAddress of conference receiver
-     * @throws ParsException if message cannot be parsed
+     * @throws ParseException if message cannot be parsed
      * @throws SipException if general sip exception occurs.
      * @throws TransactionDoesNotExistException if transaction can
      *         not be found.
@@ -792,7 +792,7 @@ Logger.println("XXX from = " + fromName + " " + cp);
      * builds and sends a standard ACK message with no SDP.
      *
      * @param clientTransaction ClientTransaction for this call
-     * @throws ParsException if message cannot be parsed
+     * @throws ParseException if message cannot be parsed
      * @throws SipException if general sip exception occurs.
      * @throws TransactionDoesNotExistException if transaction can
      *         not be found.
@@ -817,7 +817,7 @@ Logger.println("XXX from = " + fromName + " " + cp);
      * builds and sends a CANCEL message starting with an message.
      * @param clientTransaction most recent client transaction for call
      * @return transaction id of the request
-     * @throws ParsEexception if message cannot be parsed
+     * @throws ParseException if message cannot be parsed
      * @throws SipException if general sip exception occurs.
      * @throws TransactionDoesNotExistException if transaction can
      *         not be found.
@@ -870,7 +870,7 @@ Logger.println("XXX from = " + fromName + " " + cp);
 
     /**
      * builds and sends a standard BYE message.
-     * @param serverTransaction
+     * @param st serverTransaction
      */
     public void sendBye(ServerTransaction st)
             throws TransactionDoesNotExistException, ParseException,
@@ -894,7 +894,7 @@ Logger.println("XXX from = " + fromName + " " + cp);
      * builds and sends a standard OK message with SDP.
      * @return serverTransaction ServerTransaction for call
      * @param isa InetSocketAddress of conference receiver
-     * @throws ParsEexception if message cannot be parsed
+     * @throws ParseException if message cannot be parsed
      * @throws SipException if general sip exception occurs.
      * @throws TransactionDoesNotExistException if transaction can
      *         not be found.
@@ -1029,9 +1029,9 @@ Logger.println("XXX from = " + fromName + " " + cp);
 
     /**
      * builds and sends a BUSY message.
-     * @param clientTransaction ClientTransaction for call
+     * @param request clientTransaction ClientTransaction for call
      * @return serverTransaction ServerTransaction for call
-     * @throws ParsEexception if message cannot be parsed
+     * @throws ParseException if message cannot be parsed
      * @throws SipException if general sip exception occurs.
      * @throws TransactionDoesNotExistException if transaction can
      *         not be found.

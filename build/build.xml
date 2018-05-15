@@ -382,7 +382,7 @@
             </then>
             <else>
                 <!-- No overlay for i18n: simply copy all files. -->
-                <copy todir="${target.i18n.dir}">
+                <copy todir="${target.i18n.dir}/temp">
                     <fileset dir="${src.i18n.dir}" includes="*.properties"/>
                 </copy>
             </else>
@@ -393,7 +393,7 @@
             this plugin ensures that Java-compatible encoding is used.
             See https://stackoverflow.com/questions/4659929/how-to-use-utf-8-in-resource-properties-with-resourcebundle
           -->
-        <native2ascii encoding="UTF8" src="${target.i18n.dir}" dest="${target.i18n.dir}/encoded" />
+        <native2ascii encoding="UTF8" src="${target.i18n.dir}/temp" dest="${target.i18n.dir}/encoded" />
         <move todir="${target.i18n.dir}" overwrite="true">
             <fileset dir="${target.i18n.dir}/encoded"/>
         </move>

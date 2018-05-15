@@ -18,6 +18,7 @@ package org.jivesoftware.openfire.sip.tester.stack;
 
 import org.jivesoftware.openfire.sip.tester.Log;
 
+import javax.sip.SipException;
 import javax.sip.SipStack;
 import javax.sip.address.Hop;
 import javax.sip.address.Router;
@@ -135,6 +136,11 @@ public class SipCommRouter implements Router {
             throw new IllegalArgumentException("Malformed requestURI");
         }
         return (hops.size() == 0) ? null : hops.listIterator();
+    }
+
+    @Override
+    public Hop getNextHop(Request request) throws SipException {
+        return null;
     }
 
     /**
