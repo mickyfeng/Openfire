@@ -16,21 +16,14 @@
 
 package org.jivesoftware.openfire.auth;
 
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.MessageDigest;
 import java.security.Security;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.sql.*;
+import java.util.*;
+import java.util.Date;
+
 import org.bouncycastle.crypto.generators.OpenBSDBCrypt;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
@@ -46,6 +39,9 @@ import org.jivesoftware.util.PropertyEventListener;
 import org.jivesoftware.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.security.sasl.SaslException;
+import javax.xml.bind.DatatypeConverter;
 
 /**
  * The JDBC auth provider allows you to authenticate users against any database
@@ -118,6 +114,12 @@ public class JDBCAuthProvider implements AuthProvider, PropertyEventListener {
     private boolean allowUpdate;
     private boolean useConnectionProvider;
     private int bcryptCost;
+    private static final String TEST_PASSWORD =
+            "SELECT `im_user_name`,im_variable,iterations,salt,stored_key,server_key,modify_time,salt_time FROM im_user_info WHERE `im_user_name`= ? ";
+    private static final String UPDATE_PASSWORD =
+            "UPDATE im_user_info SET  stored_key=?, server_key=?, salt=?, iterations=?,salt_time=now() WHERE im_user_name=?";
+
+    private static final SecureRandom random = new SecureRandom();
 
     /**
      * Constructs a new JDBC authentication provider.
@@ -186,7 +188,7 @@ public class JDBCAuthProvider implements AuthProvider, PropertyEventListener {
             passwordTypeList.add(PasswordType.plain);
         }
         passwordTypes = passwordTypeList;
-    }    
+    }
 
     @Override
     public void authenticate(String username, String password) throws UnauthorizedException {
@@ -467,28 +469,168 @@ public class JDBCAuthProvider implements AuthProvider, PropertyEventListener {
 
     @Override
     public boolean isScramSupported() {
-        // TODO Auto-generated method stub
-        return false;
+        return true;
+    }
+    private class UserInfo {
+        String im_user_name;
+        String im_variable;
+        int iterations;
+        String salt;
+        String storedKey;
+        String serverKey;
+        Date modify_time;
+        Date salt_time;
+    }
+
+    private UserInfo getUserInfo(String username) throws UnsupportedOperationException, UserNotFoundException {
+        UserInfo userInfo =  getUserInfoFromDB(username, false);
+        if (userInfo.salt == null ||(userInfo.modify_time!=null && userInfo.salt_time!=null && userInfo.modify_time.after(userInfo.salt_time) )) {
+            userInfo = resetSalt(userInfo);
+        }
+        return  userInfo;
+    }
+
+    private UserInfo resetSalt(UserInfo userInfo) throws UserNotFoundException {
+        // Determine if the password should be stored as plain text or encrypted.
+        boolean usePlainPassword = JiveGlobals.getBooleanProperty("user.usePlainPassword");
+        boolean scramOnly = JiveGlobals.getBooleanProperty("user.scramHashedPasswordOnly");
+        String encryptedPassword = null;
+        String username = userInfo.im_user_name;
+        String password = userInfo.im_variable;
+        if (username.contains("@")) {
+            // Check that the specified domain matches the server's domain
+            int index = username.indexOf("@");
+            String domain = username.substring(index + 1);
+            if (domain.equals(XMPPServer.getInstance().getServerInfo().getXMPPDomain())) {
+                username = username.substring(0, index);
+            } else {
+                // Unknown domain.
+                throw new UserNotFoundException();
+            }
+        }
+
+        // Store the salt and salted password so SCRAM-SHA-1 SASL auth can be used later.
+        byte[] saltShaker = new byte[24];
+        random.nextBytes(saltShaker);
+        String salt = DatatypeConverter.printBase64Binary(saltShaker);
+
+
+        int iterations = JiveGlobals.getIntProperty("sasl.scram-sha-1.iteration-count",
+                ScramUtils.DEFAULT_ITERATION_COUNT);
+        byte[] saltedPassword = null, clientKey = null, storedKey = null, serverKey = null;
+        try {
+            saltedPassword = ScramUtils.createSaltedPassword(saltShaker, password, iterations);
+            clientKey = ScramUtils.computeHmac(saltedPassword, "Client Key");
+            storedKey = MessageDigest.getInstance("SHA-1").digest(clientKey);
+            serverKey = ScramUtils.computeHmac(saltedPassword, "Server Key");
+        } catch (SaslException | NoSuchAlgorithmException e) {
+            Log.warn("Unable to persist values for SCRAM authentication.");
+        }
+
+        if (!scramOnly && !usePlainPassword) {
+            try {
+                encryptedPassword = AuthFactory.encryptPassword(password);
+                // Set password to null so that it's inserted that way.
+                password = null;
+            }
+            catch (UnsupportedOperationException uoe) {
+                // Encryption may fail. In that case, ignore the error and
+                // the plain password will be stored.
+            }
+        }
+        if (scramOnly) {
+            encryptedPassword = null;
+            password = null;
+        }
+
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        try {
+            con = getConnection();
+            pstmt = con.prepareStatement(UPDATE_PASSWORD);
+            if (storedKey == null) {
+                pstmt.setNull(1, Types.VARCHAR);
+            }
+            else {
+                pstmt.setString(1, DatatypeConverter.printBase64Binary(storedKey));
+            }
+            if (serverKey == null) {
+                pstmt.setNull(2, Types.VARCHAR);
+            }
+            else {
+                pstmt.setString(2, DatatypeConverter.printBase64Binary(serverKey));
+            }
+            pstmt.setString(3, salt);
+            pstmt.setInt(4, iterations);
+            pstmt.setString(5, username);
+            pstmt.executeUpdate();
+        }
+        catch (SQLException sqle) {
+            throw new UserNotFoundException(sqle);
+        }
+        finally {
+            DbConnectionManager.closeConnection(pstmt, con);
+        }
+        return getUserInfoFromDB(username,false);
+    }
+
+    private UserInfo getUserInfoFromDB(String username, boolean recurse) throws UnsupportedOperationException, UserNotFoundException {
+        if (!isScramSupported()) {
+            // Reject the operation since the provider  does not support SCRAM
+            throw new UnsupportedOperationException();
+        }
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            con = getConnection();
+            pstmt = con.prepareStatement(TEST_PASSWORD);
+            pstmt.setString(1,username);
+            rs = pstmt.executeQuery();
+            if (!rs.next()) {
+                throw new UserNotFoundException(username);
+            }
+            UserInfo userInfo = new UserInfo();
+            userInfo.im_user_name = rs.getString(1);
+            userInfo.im_variable = rs.getString(2);
+            userInfo.iterations = rs.getInt(3);
+            userInfo.salt = rs.getString(4);
+            userInfo.storedKey = rs.getString(5);
+            userInfo.serverKey = rs.getString(6);
+            userInfo.modify_time = rs.getDate(7);
+            userInfo.salt_time = rs.getDate(8);
+
+
+            // Good to go.
+            return userInfo;
+        }
+        catch (SQLException sqle) {
+            Log.error("User SQL failure:", sqle);
+            throw new UserNotFoundException(sqle);
+        }
+        finally {
+            DbConnectionManager.closeConnection(rs, pstmt, con);
+        }
     }
 
     @Override
-    public String getSalt(String username) throws UnsupportedOperationException, UserNotFoundException {
-        throw new UnsupportedOperationException();
+    public String getSalt(String username) throws UserNotFoundException {
+        return getUserInfo(username).salt;
     }
 
     @Override
-    public int getIterations(String username) throws UnsupportedOperationException, UserNotFoundException {
-        throw new UnsupportedOperationException();
+    public int getIterations(String username) throws UserNotFoundException {
+        return getUserInfo(username).iterations;
     }
 
     @Override
-    public String getServerKey(String username) throws UnsupportedOperationException, UserNotFoundException {
-        throw new UnsupportedOperationException();
+    public String getStoredKey(String username) throws UserNotFoundException {
+        return getUserInfo(username).storedKey;
     }
 
     @Override
-    public String getStoredKey(String username) throws UnsupportedOperationException, UserNotFoundException {
-        throw new UnsupportedOperationException();
+    public String getServerKey(String username) throws UserNotFoundException {
+        return getUserInfo(username).serverKey;
     }
 
     /**
