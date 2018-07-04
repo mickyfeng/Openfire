@@ -110,7 +110,7 @@ public class PubSubModule extends BasicModule implements ServerItemsProvider, Di
      * subscriptions is enabled each subscription request, event notification and unsubscription request
      * should include a subid attribute.
      */
-    private boolean multipleSubscriptionsEnabled = true;
+    private boolean multipleSubscriptionsEnabled = false;
 
     /**
      * Bare jids of users that are allowed to create nodes. An empty list means that anyone can
@@ -422,7 +422,7 @@ public class PubSubModule extends BasicModule implements ServerItemsProvider, Di
             }
         }
 
-        multipleSubscriptionsEnabled = JiveGlobals.getBooleanProperty("xmpp.pubsub.multiple-subscriptions", true);
+        multipleSubscriptionsEnabled = JiveGlobals.getBooleanProperty("xmpp.pubsub.multiple-subscriptions", false);
 
         routingTable = server.getRoutingTable();
         router = server.getPacketRouter();

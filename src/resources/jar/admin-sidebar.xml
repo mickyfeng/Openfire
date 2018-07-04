@@ -451,6 +451,10 @@
                   url="server-connectiontest.jsp"
                   description="${sidebar.server-connectiontest.descr}"/>
 
+            <item id="system-message" name="${sidebar.system-message}"
+                  url="system-message.jsp"
+                  description="${sidebar.system-message.descr}"/>
+
         </sidebar>
     </tab>
 

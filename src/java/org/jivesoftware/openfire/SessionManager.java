@@ -36,6 +36,7 @@ import org.jivesoftware.openfire.multiplex.ConnectionMultiplexerManager;
 import org.jivesoftware.openfire.server.OutgoingSessionPromise;
 import org.jivesoftware.openfire.session.*;
 import org.jivesoftware.openfire.spi.BasicStreamIDFactory;
+import org.jivesoftware.openfire.user.User;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.LocaleUtils;
@@ -1205,6 +1206,23 @@ public class SessionManager extends BasicModule implements ClusterEventListener/
         conflictLimit = limit;
         JiveGlobals.setProperty("xmpp.session.conflict-limit", Integer.toString(conflictLimit));
     }
+
+    public void sendServerMessage_sys(String message) {
+        String subject ="System-Message";
+        message = "<title>System-Message</title><datetime>"+(new Date()).getTime()+"</datetime><msg>"+message+"</msg>";
+        Message packet = createServerMessage(subject, message);
+        String domain =XMPPServer.getInstance().getServerInfo().getXMPPDomain();
+        // send to all users
+        Collection<User> users = userManager.getUsers();
+        for (User u : users)
+        {
+            JID address= new JID(u.getUsername(), domain,null);
+            Message newMessage = packet.createCopy();
+            newMessage.setTo(address );
+            routingTable.routePacket(address, newMessage, true);
+        }
+    }
+
     /*
     @Override
     public Iterator<DiscoServerItem> getItems() {
