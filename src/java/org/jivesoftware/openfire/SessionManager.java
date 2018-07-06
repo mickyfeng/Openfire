@@ -1209,7 +1209,7 @@ public class SessionManager extends BasicModule implements ClusterEventListener/
 
     public void sendServerMessage_sys(String message) {
         String subject ="System-Message";
-        message = "<title>System-Message</title><datetime>"+(new Date()).getTime()+"</datetime><msg>"+message+"</msg>";
+        message = "{\"title\":\"System-Message\",\"datetime\":"+(new Date()).getTime()+",\"msg\":\""+message+"\"}" ;
         Message packet = createServerMessage(subject, message);
         String domain =XMPPServer.getInstance().getServerInfo().getXMPPDomain();
         // send to all users

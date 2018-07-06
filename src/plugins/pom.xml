@@ -116,6 +116,7 @@
         <module>loadStats</module>
         <module>monitoring</module>
         <module>motd</module>
+        <module>motdEx</module>
         <module>mucservice</module>
         <module>nodejs</module>
         <module>nonSaslAuthentication</module>
