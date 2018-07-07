@@ -88,7 +88,7 @@ public class MotDPExlugin implements Plugin {
                         return;
                     }
                     SysMessageTimerTask messageTask = new SysMessageTimerTask(router,serverAddress,session.getAddress());
-                    TaskEngine.getInstance().schedule(messageTask, 5000,30000 );//3 * 60 * 1000
+                    TaskEngine.getInstance().schedule(messageTask, 5000,60000 );//3 * 60 * 1000
                     smttMap.put(key, messageTask);
                 }
             }

@@ -1,20 +1,26 @@
 package org.jivesoftware.openfire.plugin;
 
 import org.jivesoftware.openfire.MessageRouter;
+import org.jivesoftware.openfire.user.UserNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Message;
 
+import java.util.List;
 import java.util.TimerTask;
 
 /**
  * Created by micky on 18-7-6.
  */
 public class SysMessageTimerTask extends TimerTask {
+    private static final Logger Log = LoggerFactory.getLogger(SysMessageTimerTask.class);
+
     public SysMessageTimerTask( MessageRouter router,JID serverAddress,JID toUser){
         this.router=router;
         this.serverAddress=serverAddress;
         this.to_user = toUser;
-        Message message = new Message();
+        message = new Message();
         message.setTo(to_user);
         message.setFrom(serverAddress);
         message.setSubject(getSubject());
@@ -27,10 +33,24 @@ public class SysMessageTimerTask extends TimerTask {
     private Message message;
     @Override
     public void run() {
-        //String messageStr =SysMessageDataProvider.getInstance().getMessageStr(to_user.getNode());
-         String messageStr ="{\"title\":\"分享状态\",\"datetime\":1530695396243,\"msg\":\"分享状态的内容。。。。。。\",\"home_share_id\":4}";
-        message.setBody(messageStr);
-        router.route(message);
+        try {
+            List<SysMessageData> list = SysMessageDataProvider.getInstance().getData(to_user.getNode());
+            if (list==null)
+                return;
+            for(SysMessageData d :list){
+                String messageStr =d.getContent();
+                message.setBody(messageStr);
+                router.route(message);
+            }
+            SysMessageDataProvider.getInstance().updateSendTime(list);
+        } catch (UserNotFoundException e) {
+            Log.error(e.getMessage());
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            Log.error(e.getMessage());
+            e.printStackTrace();
+        }
+
     }
 
     private String getSubject() {
