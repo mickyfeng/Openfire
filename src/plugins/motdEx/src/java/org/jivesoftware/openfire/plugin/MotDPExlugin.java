@@ -23,7 +23,7 @@ import org.xmpp.packet.JID;
 public class MotDPExlugin implements Plugin {
     //private static final String SUBJECT = "plugin.motd.subject";
     //private static final String MESSAGE = "plugin.motd.message";
-    private static final String ENABLED = "plugin.motd.enabled";
+    private static final String ENABLED = "plugin.motdEx.enabled";
 
     private JID serverAddress;
     private MessageRouter router;

@@ -131,6 +131,17 @@ public class FileTransferProxy extends BasicModule
             return true;
         }
         else if (FileTransferManager.NAMESPACE_BYTESTREAMS.equals(namespace)) {
+            ////--------------------------------------------------------------------------------
+            //不支持文件传递。
+            if (true) {
+                IQ reply = IQ.createResultIQ(packet);
+                Log.error("not sport file bYTE");
+                reply.setType(IQ.Type.error);
+                reply.setError(new PacketError(PacketError.Condition.not_allowed));
+                router.route(reply);
+                return true;
+            }
+            ////--------------------------------------------------------------------------------
             if (packet.getType() == IQ.Type.get) {
                 IQ reply = IQ.createResultIQ(packet);
                 Element newChild = reply.setChildElement("query", FileTransferManager.NAMESPACE_BYTESTREAMS);
@@ -288,8 +299,8 @@ public class FileTransferProxy extends BasicModule
 
     public void enableFileTransferProxy(boolean isEnabled) {
         JiveGlobals.setProperty(FileTransferProxy.JIVEPROPERTY_PROXY_ENABLED,
-                                Boolean.toString(isEnabled));
-        setEnabled( isEnabled );
+                Boolean.toString(isEnabled));
+        setEnabled(isEnabled);
     }
 
     private void setEnabled(boolean isEnabled) {
@@ -376,7 +387,7 @@ public class FileTransferProxy extends BasicModule
     @Override
     public Iterator<String> getFeatures(String name, String node, JID senderJID) {
         return Arrays.asList(FileTransferManager.NAMESPACE_BYTESTREAMS,
-                             "http://jabber.org/protocol/disco#info").iterator();
+                "http://jabber.org/protocol/disco#info").iterator();
     }
 
     @Override
