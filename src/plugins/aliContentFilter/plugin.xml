@@ -8,7 +8,7 @@
     <name>ALI Content Filter</name>
     <description>Scans message packets for defined patterns</description>
     <author>Terry</author>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
     <date>07/23/2019</date>
     <minServerVersion>0.0.1</minServerVersion>
     

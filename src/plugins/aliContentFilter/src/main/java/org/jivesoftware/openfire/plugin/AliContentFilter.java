@@ -45,6 +45,7 @@ import java.util.*;
  */
 public class AliContentFilter {
     private static final Logger logger = LoggerFactory.getLogger(AliContentFilter.class);
+    private static final String ossHttp="https://neverlost-msg.oss-cn-shenzhen.aliyuncs.com/";
 
     private void logInof(String log){
         if (logger.isDebugEnabled()){
@@ -109,6 +110,11 @@ public class AliContentFilter {
     }
 
     private  void checkImg(String imgUrl) throws AliyunGreenException {
+        if (imgUrl == null)
+            return;
+        if (!(imgUrl.indexOf("https://")==0 ||imgUrl.indexOf("http://")==0) ){
+            imgUrl=ossHttp+imgUrl;
+        }
         IAcsClient client = getClient();
 
         ImageSyncScanRequest imageSyncScanRequest = new ImageSyncScanRequest();

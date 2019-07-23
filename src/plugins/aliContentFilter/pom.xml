@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.igniterealtime.openfire.plugins</groupId>
     <artifactId>aliContentFilter</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
     <name>ali ContentFilter Plugin</name>
     <description>Scans message packets for defined patterns</description>
     <developers>
