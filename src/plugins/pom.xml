@@ -136,6 +136,7 @@
         <module>userservice</module>
         <module>userStatus</module>
         <module>xmldebugger</module>
+        <module>aliContentFilter</module>
     </modules>
 
     <organization>
